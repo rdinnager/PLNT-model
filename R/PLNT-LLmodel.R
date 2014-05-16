@@ -33,7 +33,9 @@ ll.PLNT<- function(comm, phylo, params) {
 #' account other species and their competitive effects
 BBfun<- function(x, Pf, Alph, Nj, Nq){
   xmat<-matrix(x,nrow=Nj,ncol=Nq)
-  alpha<-matrix(rep(aaply(Alph,1,function(x) sum(x,na.rm=TRUE)),length.out=Nq*Nj),nrow=Nj,ncol=Nq)
+  xnew<-alply(xmat,2,identity)
+  alph1<-mapply(function(x,y) x*y, xnew, list(Alph),SIMPLIFY=FALSE)
+  alpha<-t(laply(alph1,function(x) aaply(x,1,function(y) sum(y,na.rm=TRUE))))
   y<-pmax(matrix(0,nrow=Nj,ncol=Nq),Pf-(alpha*xmat))-xmat
   return(as.vector(y))
 }
