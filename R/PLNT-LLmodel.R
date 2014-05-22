@@ -1,33 +1,50 @@
 require(plyr)
 require(BB)
+
 #' log likelihood function for Phylogenetic Latent Niche Traits Model (PLNT-Model)
 #' @param comm A community matrix with species in the columns and sites in the rows.
 #' Matrix is composed of 0's and 1's where 0 is the absence of a species and 1 is the presence
 #' @param phylo A phylogeny of the species in the community matrix in the form of the 
-#' Cholesky decomposition of the phylogenetic covariance matrix (can be generated a expectation 
-#' of Brownian motion evolution). Provide Cholesky decomposition so it does not have to be
-#' performed during every iteration.
+#' the phylogenetic covariance matrix (can be generated a expectation of Brownian motion 
+#' evolution). 
 #' @param params
+#' @export
 ll.PLNT<- function(comm, phylo, params) {
-  Vmat<-llply(params$V,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
+  # meld phylogenetic correlation matrix with diagonal matrix which represents 
+  # no correlation b/w species to form new hybrid CV matrix
+  CVmat<-(params$PhyEff)*phylo + (1-params$PhyEff)*diag(1,params$Nj)
+  # Apply cholesky decomposition of of CV matrix to normally distributed
+  # Phi vector to force values to be (phylogenetically) correlated
+  Phi<-llply(params$Phi, function (x) params$Sigj*(x%*%chol(CVmat)))
+  V<-llply(params$V, function (x) params$Sigq*x) #apply environmental variance (Sigq)
+  # Make V vectors into matrices
+  Vmat<-llply(V,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
                                           nrow=params$Nj,ncol=params$Nq,byrow=TRUE) )
-  Phimat<-llply(params$Phi,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
+  # Make Phi vectors into matrices
+  Phimat<-llply(Phi,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
                                               nrow=params$Nj,ncol=params$Nq))
+  # Make Sig value into matrices
   Sigmat<-rlply(params$Nk,matrix(rep(params$Sig,length.out=params$Nq*params$Nj),
                                  nrow=params$Nj,ncol=params$Nq))
+  # Do matrix function to calculate fundamental probabilities of species in sites
+  # according to model ()
   Pf<-mapply(function(x,y,z) ((x-y)/z)^2, Vmat, Phimat, Sigmat, SIMPLIFY=FALSE)
   Pf<-exp((-1)*do.call("+",Pf)) #Pf = Fundamental probability of existence of 
-  #species j (rows) in site q (columns)
-  # Calculate alpha competition coefficients
+  # species j (rows) in site q (columns)
+  # Calculate alpha competition coefficients for each competition dimension
   Alphmat<-llply(params$Alph,function(x) ((matrix(rep(x,length.out=params$Nj^2),
                                                   nrow=params$Nj,ncol=params$Nj,byrow=TRUE)-
                    matrix(rep(x,length.out=params$Nj^2),nrow=params$Nj,ncol=params$Nj))/params$w)^2)
-  Alphmat<-exp((-1)*do.call("+",Alphmat))
+  Alphmat<-exp((-1)*do.call("+",Alphmat)) # multiply competition dimensions
   diag(Alphmat)<-NA
   test<-BBsolve(runif(Nj*Nq,0,1),BBfun,Pf=Pf,Alph=Alphmat,Nj=params$Nj,Nq=params$Nq,
                 control=list(trace=TRUE))
   Pr<-matrix(test$par,nrow=params$Nj,ncol=params$Nq) #Pr = Realized probability of existence 
   #of species j (rows) in site q (columns)
+  LL<-matrix(NA,nrow=params$Nj,ncol=params$Nq)
+  LL[comm==1]<-log(Pr) #Log Likelihood of observing species
+  LL[comm==0]<-log(1-Pr) #Log Likelihood of not observing species
+  return(sum(LL)) #Return full likelihood!
 }
 #' Numerical solver function for probability of a species existing at a site taking into
 #' account other species and their competitive effects
@@ -51,10 +68,10 @@ params$Nq<-3 #number of sites
 params$Nk<-2 #number of environmental dimensions
 params$w<-1 #width of gaussian resource curves
 
-Alph<-Alphmat
-x<-as.vector(Pf)
-Nj<-params$Nj
-Nq<-params$Nq
+#Alph<-Alphmat
+#x<-as.vector(Pf)
+#Nj<-params$Nj
+#Nq<-params$Nq
 
 
 #Testing Cholesky Decomposition method for generating correlated variable
