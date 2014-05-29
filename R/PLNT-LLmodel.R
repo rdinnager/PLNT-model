@@ -57,16 +57,16 @@ BBfun<- function(x, Pf, Alph, Nj, Nq){
   return(as.vector(y))
 }
 
-params<-list()
-params$V<-list(c(1,2,3),c(2,2,2)) #should be a length Nk list of vectors of length Nq
-params$Phi<-list(c(1,2),c(1,3)) #length Nk list of vectors of length Nj
-params$Sig<-c(2,3) #vector of length Nj
-params$K<-c(1,1)
-params$Alph<-list(c(1,2),c(2,2.5))
-params$Nj<-2 #number of species
-params$Nq<-3 #number of sites
-params$Nk<-2 #number of environmental dimensions
-params$w<-1 #width of gaussian resource curves
+#params<-list()
+#params$V<-list(c(1,2,3),c(2,2,2)) #should be a length Nk list of vectors of length Nq
+#params$Phi<-list(c(1,2),c(1,3)) #length Nk list of vectors of length Nj
+#params$Sig<-c(2,3) #vector of length Nj
+#params$K<-c(1,1)
+#params$Alph<-list(c(1,2),c(2,2.5))
+#params$Nj<-2 #number of species
+#params$Nq<-3 #number of sites
+#params$Nk<-2 #number of environmental dimensions
+#params$w<-1 #width of gaussian resource curves
 
 #Alph<-Alphmat
 #x<-as.vector(Pf)
@@ -75,7 +75,7 @@ params$w<-1 #width of gaussian resource curves
 
 
 #Testing Cholesky Decomposition method for generating correlated variable
-cvm<-cor(cbind(runif(10),runif(10),runif(10),runif(10)))
-test<-cor(replicate(4,rnorm(10000))%*%chol(cvm)) #chol equals Cholesky Decomposition
+#cvm<-cor(cbind(runif(10),runif(10),runif(10),runif(10)))
+#test<-cor(replicate(4,rnorm(10000))%*%chol(cvm)) #chol equals Cholesky Decomposition
 #work pretty well:
-cvm-test
+#cvm-test

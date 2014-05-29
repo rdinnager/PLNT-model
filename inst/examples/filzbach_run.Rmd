@@ -1,0 +1,22 @@
+---
+title: "Filzbach Run"
+author: "Russell Dinnage"
+date: "Thursday, May 29, 2014"
+output: html_document
+---
+
+This vignette shows how I fit a Phylogenetic Latent Niche Trait model on a fish dataset that was kindly provided to me by Mattew Helmus.
+
+The first step is to load in the fish dataset. This data consists of the presence or absence of 11 sunfish species measured in 890 lakes through-out "" United States. Additionally there is a phylogenetic tree containing all of these sunfish, and also some environmental data for each lake that we won't make use of initially.
+
+```{r load data,cache=TRUE}
+fishPA <- read.csv("D:/Users/Dinnage/Projects/PLNT-model/data/HelmusFishPA.csv")
+head(fishPA)
+```
+
+This is the likelihood function for the model:
+
+```{r, cache=TRUE, echo=FALSE, comment=""}
+source("D:/Users/Dinnage/Projects/PLNT-model/R/PLNT-LLmodel.R")
+ll.PLNT
+```
