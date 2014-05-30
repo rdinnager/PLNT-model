@@ -31,7 +31,19 @@ The fundamental probability of species $i$ existing at a site $j$ is determined 
 
 $$ P_{i, j}^{F} = K_{i}\cdot \exp\left (\sum_{d}^{d_{max}} -1\cdot \left [ \frac{E_{d,j} - \phi _{d,i}}{\sigma_{d,i} } \right ]^{2} \right ) $$
 
-This is the likelihood function for the model:
+This equation simply describes a species probability distribution based on it's hypothetical or latent traits (the $\phi _{d,i}$) and the site's hypothetical or latent environmental optimum (the $E_{d,j}$) for $d$ traits. The function is Gaussian, with a species having a probability of $K_{i}$ when it's traits are exactly on the site's environmental optimum. If the species traits and the site's optimum are difference from each other, the probability declines with distance according to a Gaussian function. $K_{i}$ is contrained to fall between 0 and 1. In this model we are treating species' traits and site's environmental optimums as latent variable, to be estimated by the model, however, if one had data on species' traits, it would be trivial to replace the latent trait parameter vector with a data vector of the measured traits. Likewise, the $E_{d,j}$ could be thought of an environmental property of some kind, and the $\phi _{d,i}$ variables as the species' optimum for those environmental properties, in which case you could substitute measured environmental variables for the fitted parameters $E_{d,j}$. Either way, the model works the same way. Even better would be to use measured environmental variables but also include some latent environmental parameters, which could account for structure in the data unexplained by what was measured.
+
+The above model captures the effect of environmental filters on species, but we also wish to look for the signature of competitive species interactions. To do this, each species' fundamental probability of existing in a site is modified by interactions with other species to create a realized probability of existing. This is achieved by reducing a species' probability proportional to the probability of other species being in that site, weighted by pairwise species competition coefficients. This is what the equation looks like:
+
+$$ P_{i, j}^{R} = \max \left [ \left ( P_{i,j}^{F} - \sum _{k \neq q} \alpha _{k,q}\cdot P_{i,q}^{R} \right ), 0 \right ] $$
+
+This is a highly non-linear equation because it contains the $\max$ function in order to keep all probabilities positive, and also because each species realized probability depends on the realized probability of all other species. There is no simple analytical solution for this type of equation, but it can be solved readily using numerical methods, which is what I do here, using the R package `BB` for numerical solving of non-linear equations.
+
+
+
+Once we have calculated the realized probabilities of all species for all sites under a set of parameters, it is simple to calculate the likelihood of that set of parameters. Using the observed data, if a species is present at a site then the likelhood is just $P_{i, j}^{R}$, if a species is not at a site then the likelihood is $1 - P_{i, j}^{R}$. The full likelihood then is simply the product of this likelihood across all species-site combinations.
+
+This is the log likelihood function for the model translated into R code:
 
 ```{r ll, eval=FALSE}
 ll.PLNT<- function(params,comm, phylo) {
