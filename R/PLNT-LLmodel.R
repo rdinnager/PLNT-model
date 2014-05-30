@@ -9,51 +9,51 @@ require(BB)
 #' evolution). 
 #' @param params
 #' @export
-ll.PLNT<- function(comm, phylo, params) {
-  # meld phylogenetic correlation matrix with diagonal matrix which represents 
-  # no correlation b/w species to form new hybrid CV matrix
-  CVmat<-(params$PhyEff)*phylo + (1-params$PhyEff)*diag(1,params$Nj)
-  # Apply cholesky decomposition of of CV matrix to normally distributed
-  # Phi vector to force values to be (phylogenetically) correlated
-  Phi<-llply(params$Phi, function (x) params$Sigj*(x%*%chol(CVmat)))
-  V<-llply(params$V, function (x) params$Sigq*x) #apply environmental variance (Sigq)
-  # Make V vectors into matrices
-  Vmat<-llply(V,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
-                                          nrow=params$Nj,ncol=params$Nq,byrow=TRUE) )
-  # Make Phi vectors into matrices
-  Phimat<-llply(Phi,function(x) matrix(rep(x,length.out=params$Nq*params$Nj),
-                                              nrow=params$Nj,ncol=params$Nq))
-  # Make Sig value into matrices
-  Sigmat<-rlply(params$Nk,matrix(rep(params$Sig,length.out=params$Nq*params$Nj),
-                                 nrow=params$Nj,ncol=params$Nq))
-  # Do matrix function to calculate fundamental probabilities of species in sites
-  # according to model ()
-  Pf<-mapply(function(x,y,z) ((x-y)/z)^2, Vmat, Phimat, Sigmat, SIMPLIFY=FALSE)
+ll.PLNT<- function(params,comm, phylo) {
+  ## meld phylogenetic correlation matrix with diagonal matrix which represents 
+  ## no correlation b/w species to form new hybrid CV matrix
+  CVmat<-(params$PhyEff)*phylo + (1-params$PhyEff)*diag(1,params$Ni)
+  ## Apply cholesky decomposition of of CV matrix to normally distributed
+  ## Phi vector to force values to be (phylogenetically) correlated
+  Phi<-llply(params$Phi, function (x) params$Sigi*(x%*%chol(CVmat)))
+  E<-llply(params$E, function (x) params$Sigj*x) ## apply environmental variance (Sigj)
+  ## Make V vectors into matrices
+  Emat<-llply(E,function(x) matrix(rep(x,length.out=params$Nj*params$Ni),
+                                   nrow=params$Ni,ncol=params$Nj,byrow=TRUE) )
+  ## Make Phi vectors into matrices
+  Phimat<-llply(Phi,function(x) matrix(rep(x,length.out=params$Nj*params$Ni),
+                                       nrow=params$Ni,ncol=params$Nj))
+  ## Make Sig value into matrices
+  Sigmat<-rlply(params$Nd,matrix(rep(params$Sig,length.out=params$Nj*params$Ni),
+                                 nrow=params$Ni,ncol=params$Nj))
+  ## Do matrix function to calculate fundamental probabilities of species in sites
+  ## according to model ()
+  Pf<-mapply(function(x,y,z) ((x-y)/z)^2, Emat, Phimat, Sigmat, SIMPLIFY=FALSE)
   Pf<-exp((-1)*do.call("+",Pf)) #Pf = Fundamental probability of existence of 
-  # species j (rows) in site q (columns)
-  # Calculate alpha competition coefficients for each competition dimension
-  Alphmat<-llply(params$Alph,function(x) ((matrix(rep(x,length.out=params$Nj^2),
-                                                  nrow=params$Nj,ncol=params$Nj,byrow=TRUE)-
-                   matrix(rep(x,length.out=params$Nj^2),nrow=params$Nj,ncol=params$Nj))/params$w)^2)
-  Alphmat<-exp((-1)*do.call("+",Alphmat)) # multiply competition dimensions
+  ## species j (rows) in site q (columns)
+  ## Calculate alpha competition coefficients for each competition dimension
+  Alphmat<-llply(params$Alph,function(x) ((matrix(rep(x,length.out=params$Ni^2),
+                                                  nrow=params$Ni,ncol=params$Ni,byrow=TRUE)-
+                                             matrix(rep(x,length.out=params$Ni^2),nrow=params$Ni,ncol=params$Ni))/params$w)^2)
+  Alphmat<-exp((-1)*do.call("+",Alphmat)) ## multiply competition dimensions
   diag(Alphmat)<-NA
-  test<-BBsolve(runif(Nj*Nq,0,1),BBfun,Pf=Pf,Alph=Alphmat,Nj=params$Nj,Nq=params$Nq,
+  test<-BBsolve(runif(Ni*Nj,0,1),BBfun,Pf=Pf,Alph=Alphmat,Ni=params$Ni,Nj=params$Nj,
                 control=list(trace=TRUE))
-  Pr<-matrix(test$par,nrow=params$Nj,ncol=params$Nq) #Pr = Realized probability of existence 
-  #of species j (rows) in site q (columns)
-  LL<-matrix(NA,nrow=params$Nj,ncol=params$Nq)
-  LL[comm==1]<-log(Pr) #Log Likelihood of observing species
-  LL[comm==0]<-log(1-Pr) #Log Likelihood of not observing species
-  return(sum(LL)) #Return full likelihood!
+  Pr<-matrix(test$par,nrow=params$Ni,ncol=params$Nj) ## Pr = Realized probability of existence 
+  ## of species i (rows) in site j (columns)
+  LL<-matrix(NA,nrow=params$Ni,ncol=params$Nj)
+  LL[comm==1]<-log(Pr) ## Log Likelihood of observing species
+  LL[comm==0]<-log(1-Pr) ## Log Likelihood of not observing species
+  return(sum(LL)) ## Return full likelihood!
 }
-#' Numerical solver function for probability of a species existing at a site taking into
-#' account other species and their competitive effects
-BBfun<- function(x, Pf, Alph, Nj, Nq){
-  xmat<-matrix(x,nrow=Nj,ncol=Nq)
+## Numerical solver function for probability of a species existing at a site taking into
+## account other species and their competitive effects
+BBfun<- function(x, Pf, Alph, Ni, Nj){
+  xmat<-matrix(x,nrow=Ni,ncol=Nj)
   xnew<-alply(xmat,2,identity)
   alph1<-mapply(function(x,y) x*y, xnew, list(Alph),SIMPLIFY=FALSE)
   alpha<-t(laply(alph1,function(x) aaply(x,1,function(y) sum(y,na.rm=TRUE))))
-  y<-pmax(matrix(0,nrow=Nj,ncol=Nq),Pf-(alpha*xmat))-xmat
+  y<-pmax(matrix(0,nrow=Ni,ncol=Nj),Pf-(alpha*xmat))-xmat
   return(as.vector(y))
 }
 
