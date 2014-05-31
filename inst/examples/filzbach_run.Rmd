@@ -113,6 +113,7 @@ comm <- fishPA[,-1]
 Nk <- 2
 Ni <- ncol(comm)
 Nj <- nrow(comm)
+phylo <- fishPhylo
 
 ## and here is the money function. Note: In R, skip the "Parameter Name" in create_parameter from C code:
 ## void parameter_create(char name[], double lb, double ub, double val, int type, int
@@ -121,19 +122,19 @@ Nj <- nrow(comm)
 ## double val (initial value), int type (0 = -inf:inf; 1 = 0:inf), int fixed (0 = free param; 1 = fixed; 
 ## -1 = free but use val), int dsply (1 = output value), int number (number of params to make));
 mod <- filzbach(100, 100, 
-                function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, comm, phylo) {
+                function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, comm) {
                         params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), 
                                      Sig=Sig, Sigi=Sigi, Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
-                        LL.PLNT(params, comm, phylo) },
+                        ll.PLNT(params, comm, phylo) },
                 94,
                 list(
                     PhyEff = c(0.00010, 1, 1, 1, 0, 1),
-                    Phi1 = c(-100, 100, 0.01, 0, 0, 1, Ni)
-                    Phi2 = c(-100, 100, 0.01, 0, 0, 1, Ni)
-                    E1 = c(-100, 100, 0.01, 0, 0, 1, Nj)
-                    E2 = c(-100, 100, 0.01, 0, 0, 1, Nj)
-                    Sig = c(0.00010, 50.0, 0.5, 1, 0, 1)
-                    Sigi = c(0.00010, 50.0, 0.5, 1, 0, 1)
+                    Phi1 = c(-100, 100, 0.01, 0, 0, 1, Ni),
+                    Phi2 = c(-100, 100, 0.01, 0, 0, 1, Ni),
+                    E1 = c(-100, 100, 0.01, 0, 0, 1, Nj),
+                    E2 = c(-100, 100, 0.01, 0, 0, 1, Nj),
+                    Sig = c(0.00010, 50.0, 0.5, 1, 0, 1),
+                    Sigi = c(0.00010, 50.0, 0.5, 1, 0, 1),
                     Sigj = c(0.00010, 50.0, 0.5, 1, 0, 1)
                 ))
 
