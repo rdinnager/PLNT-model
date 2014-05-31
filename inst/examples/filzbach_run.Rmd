@@ -2,7 +2,7 @@
 title: "Filzbach Run"
 author: "Russell Dinnage"
 date: "Thursday, May 29, 2014"
-output: html_document
+output: md_document
 ---
 
 ```{r setup, echo=FALSE, cache=TRUE, results='hide', message=FALSE, warning=FALSE}
@@ -46,7 +46,7 @@ Once we have calculated the realized probabilities of all species for all sites 
 This is the log likelihood function for the model translated into R code:
 
 ```{r ll, eval=FALSE}
-ll.PLNT<- function(params,comm, phylo) {
+ll.PLNT<- function(params, comm, phylo) {
   ## meld phylogenetic correlation matrix with diagonal matrix which represents 
   ## no correlation b/w species to form new hybrid CV matrix
   CVmat<-(params$PhyEff)*phylo + (1-params$PhyEff)*diag(1,params$Ni)
@@ -100,8 +100,42 @@ To run Filzbach using this likelihood function and the above data we use the `Fi
 ```{r run filzbach, cache=TRUE}
 library(filzbach)
 ## make wrapper function to translate filzbach parameters into likelihood function parameters
-## here we are going to use two dimensions for the latent niche traits (V1 and V2; Phi1 and Phi2)
+## here we are going to use two dimensions for the latent niche traits (V1 and V2; Phi1 and Phi2) 
 ll.wrap <- function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, Ni, Nj, Nk, comm, phylo) {
-  params<-list()   
+  params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), Sig=Sig, Sigi=Sigi,
+               Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
+  LL.PLNT(params, comm, phylo)
 }
+
+## setup fixed parameters and data
+
+comm <- fishPA[,-1]
+Nk <- 2
+Ni <- ncol(comm)
+Nj <- nrow(comm)
+
+## and here is the money function. Note: In R, skip the "Parameter Name" in create_parameter from C code:
+## void parameter_create(char name[], double lb, double ub, double val, int type, int
+## fixed, int dsply);
+## void parameter_create_vector(char name[], double lb (lower bound), double ub (upper bound), 
+## double val (initial value), int type (0 = -inf:inf; 1 = 0:inf), int fixed (0 = free param; 1 = fixed; 
+## -1 = free but use val), int dsply (1 = output value), int number (number of params to make));
+mod <- filzbach(100, 100, 
+                function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, comm, phylo) {
+                        params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), 
+                                     Sig=Sig, Sigi=Sigi, Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
+                        LL.PLNT(params, comm, phylo) },
+                94,
+                list(
+                    PhyEff = c(0.00010, 1, 1, 1, 0, 1),
+                    Phi1 = c(-100, 100, 0.01, 0, 0, 1, Ni)
+                    Phi2 = c(-100, 100, 0.01, 0, 0, 1, Ni)
+                    E1 = c(-100, 100, 0.01, 0, 0, 1, Nj)
+                    E2 = c(-100, 100, 0.01, 0, 0, 1, Nj)
+                    Sig = c(0.00010, 50.0, 0.5, 1, 0, 1)
+                    Sigi = c(0.00010, 50.0, 0.5, 1, 0, 1)
+                    Sigj = c(0.00010, 50.0, 0.5, 1, 0, 1)
+                ))
+
+
 ```
