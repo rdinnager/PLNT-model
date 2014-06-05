@@ -25,7 +25,8 @@ ll.PLNT<- function(params,comm, phylo) {
                                        nrow=params$Ni,ncol=params$Nj))
   ## Make Sig value into matrices
   Sigmat<-rlply(params$Nd,matrix(rep(params$Sig,length.out=params$Nj*params$Ni),
-                                 nrow=params$Ni,ncol=params$Nj))
+                                 nrow=params$Ni,ncol=params$Nj)
+                )
   ## Do matrix function to calculate fundamental probabilities of species in sites
   ## according to model ()
   Pf<-mapply(function(x,y,z) ((x-y)/z)^2, Emat, Phimat, Sigmat, SIMPLIFY=FALSE)
@@ -42,8 +43,11 @@ ll.PLNT<- function(params,comm, phylo) {
   Pr<-matrix(test$par,nrow=params$Ni,ncol=params$Nj) ## Pr = Realized probability of existence 
   ## of species i (rows) in site j (columns)
   LL<-matrix(NA,nrow=params$Ni,ncol=params$Nj)
-  LL[comm==1]<-log(Pr) ## Log Likelihood of observing species
-  LL[comm==0]<-log(1-Pr) ## Log Likelihood of not observing species
+  LL[comm==1]<-log(Pr[comm==1]) ## Log Likelihood of observing species
+  LL[comm==0]<-log(1-Pr[comm==0]) ## Log Likelihood of not observing species
+  print(sum(LL))
+  ii<<-ii+1 ## update and print out iteration number
+  print(ii)
   return(sum(LL)) ## Return full likelihood!
 }
 ## Numerical solver function for probability of a species existing at a site taking into

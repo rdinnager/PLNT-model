@@ -101,16 +101,15 @@ To run Filzbach using this likelihood function and the above data we use the `Fi
 library(filzbach)
 ## make wrapper function to translate filzbach parameters into likelihood function parameters
 ## here we are going to use two dimensions for the latent niche traits (V1 and V2; Phi1 and Phi2) 
-ll.wrap <- function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, Ni, Nj, Nk, comm, phylo) {
-  params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), Sig=Sig, Sigi=Sigi,
-               Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
+ll.wrap <- function(PhyEff, Phi1, Phi2, E1, E2, Alph1, Alph2, Sig, Sigi, Sigj, Ni, Nj, Nk, comm, phylo) {
+  params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), Alph=list(Alph1=Alph1, Alph2=Alph2), Sig=Sig, Sigi=Sigi, Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
   LL.PLNT(params, comm, phylo)
 }
 
 ## setup fixed parameters and data
 
 comm <- fishPA[,-1]
-Nk <- 2
+Nd <- 2
 Ni <- ncol(comm)
 Nj <- nrow(comm)
 phylo <- fishPhylo
@@ -121,10 +120,10 @@ phylo <- fishPhylo
 ## void parameter_create_vector(char name[], double lb (lower bound), double ub (upper bound), 
 ## double val (initial value), int type (0 = -inf:inf; 1 = 0:inf), int fixed (0 = free param; 1 = fixed; 
 ## -1 = free but use val), int dsply (1 = output value), int number (number of params to make));
-mod <- filzbach(100, 100, 
-                function(PhyEff, Phi1, Phi2, E1, E2, Sig, Sigi, Sigj, comm) {
-                        params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), 
-                                     Sig=Sig, Sigi=Sigi, Sigj=Sigj, Ni=Ni, Nj=Nj, Nk=Nk)
+ii <<-0
+mod <- filzbach(1000, 1000, 
+                function(PhyEff, Phi1, Phi2, E1, E2, Alph1, Alph2, Sig, Sigi, Sigj, w) {
+                        params<-list(PhyEff=PhyEff, Phi=list(Phi1=Phi1, Phi2=Phi2), E=list(E1=E1, E2=E2), Alph=list(Alph1=Alph1, Alph2=Alph2), Sig=Sig, Sigi=Sigi, Sigj=Sigj, w=w, Ni=Ni, Nj=Nj, Nd=Nd)
                         ll.PLNT(params, comm, phylo) },
                 94,
                 list(
@@ -133,9 +132,12 @@ mod <- filzbach(100, 100,
                     Phi2 = c(-100, 100, 0.01, 0, 0, 1, Ni),
                     E1 = c(-100, 100, 0.01, 0, 0, 1, Nj),
                     E2 = c(-100, 100, 0.01, 0, 0, 1, Nj),
+                    Alph1 = c(-100, 100, 0.01, 0, 0, 1, Ni),
+                    Alph2 = c(-100, 100, 0.01, 0, 0, 1, Ni),
                     Sig = c(0.00010, 50.0, 0.5, 1, 0, 1),
                     Sigi = c(0.00010, 50.0, 0.5, 1, 0, 1),
-                    Sigj = c(0.00010, 50.0, 0.5, 1, 0, 1)
+                    Sigj = c(0.00010, 50.0, 0.5, 1, 0, 1),
+                    w = c(0.00010, 20, 1, 1, 0, 1)
                 ))
 
 
